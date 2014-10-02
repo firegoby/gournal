@@ -1,0 +1,87 @@
+html {
+    background: #f2f2f2;
+    color: #333;
+    font: 100%/1.4 "Helvetica Neue", Arial, sans-serif;
+    padding: 2% 6%;
+}
+
+body {
+    max-width: 40em;
+    margin: 0 auto;
+}
+
+
+
+h1 {
+    font-weight: 200;
+}
+
+h2 {
+    font-weight: 300;
+}
+
+h3 {
+    font-style: italic;
+    font-weight: 300;
+}
+
+a {
+    border-bottom: 1px dotted #44b;
+    color: #44b;
+    text-decoration: none;
+}
+
+li {
+    margin-bottom: 0.5em;
+}
+
+p.secondary {
+    color: #555;
+    font-size: 86.5%;
+}
+
+b.done {
+    font-weight: normal;
+    text-decoration: line-through;
+}
+
+input {
+    border: 1px solid #ccc;
+    height: 2em;
+    line-height: 2em;
+    margin-bottom: 1em;
+    padding: 1em;
+    width: 100%;
+}
+
+textarea {
+    border: 1px solid #ccc;
+    height: 20em;
+    margin-bottom: 1em;
+    padding: 1em;
+    width: 100%;
+}
+
+button {
+    background: #44b;
+    border: 0;
+    color: white;
+    cursor: pointer;
+    height: 3em;
+    margin-bottom: 1em;
+    padding: 1em;
+    width: 12em;
+}
+
+button.secondary {
+    background: #ccc;
+    color: #555;
+}
+
+hr {
+    background: #ddd;
+    border: 0;
+    height: 1px;
+    margin: 3em 0 1.5em;
+    width: 50%;
+}

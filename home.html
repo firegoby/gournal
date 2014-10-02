@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+    <body>
+        <h1>Hello world!</h1>
+        <a href='/articles/new'>Want to create an article?</a>
+        <h2>Posts</h2>
+        {{  if . }}
+            <ul>
+                {{ range $post := . }}
+                    <li><a href='articles/{{ $post.Slug }}'>{{ $post.Title }}</a></li>
+                {{ end }}
+            </ul>
+        {{ else }}
+            <p>No posts yet! <a href="articles/new">Create one&hellip;</a></p>
+        {{ end }}
+</body>
+</html>

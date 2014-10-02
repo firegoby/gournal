@@ -1,0 +1,1 @@
+{"Title":"Outputting HTML from templates, not writing out strings... ohh fancy! ;)","Body":"Writing out plain strings to the http.RepsonseWriter is just SO last month, let's get all fancy and use the template package instead!","Slug":"outputting-html-from-templates-not-writing-out-strings-ohh-fancy"}

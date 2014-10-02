@@ -1,3 +1,4 @@
+// Simplebog implements the most minimal blog imaginable.
 package main
 
 import (
@@ -10,16 +11,24 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/gorilla/mux"
 )
 
+// A Post contains a title, body and slug (used as a permalink).
 type Post struct {
 	Title string
 	Body  string
 	Slug  string
 }
 
+// String returns a simple single line representation of a Post, implementing the Stringer interface
+func (p *Post) String() string {
+	return fmt.Sprintf("%s (%s)", p.Title, p.Slug)
+}
+
+// Main creates a gorilla/mux router and dispatches incoming requests on port :3000.
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -27,34 +36,36 @@ func main() {
 	router.HandleFunc("/articles/new", NewArticleHandler).Methods("GET")
 	router.HandleFunc("/articles", CreateArticleHandler).Methods("POST")
 	router.HandleFunc("/articles/{title}", ShowArticleHandler).Methods("GET")
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 
 	log.Println("Listening on port 3000...")
 	http.ListenAndServe(":3000", router)
 }
 
+// HomeHandler provides a welcome/index page with a listing of recents posts, and a link to create a new post.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	posts, err := ioutil.ReadDir("posts")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	html := "<!doctype html><html><body>Hello world! <a href='/articles/new'>Want to create an article?</a><ul>"
 	sort.Sort(byLatestDate(posts))
+	var postsData = make([]*Post, 0)
 	for _, file := range posts {
 		post, err := LoadPost(file.Name()[:len(file.Name())-5])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		postListing := fmt.Sprintf("<li><a href='articles/%s'>%s</a></li>", post.Slug, post.Title)
-		html += postListing
+		postsData = append(postsData, post)
 	}
-	html += "</ul></body></html>"
-	fmt.Fprintf(w, html)
+	renderTemplate(w, "home", postsData)
 }
 
+// NewArticleHandler is a RESTful function for GET /photos/new
 func NewArticleHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<!doctype html><html><body><form action='/articles' method='post'><input type='text' name='title' placeholder='enter your title&hellip;'/><br/><textarea name='body' placeholder='your thoughts...'></textarea><br/><input type='submit' value='Submit'/></form></body></html>")
+	renderTemplate(w, "new_article", nil)
 }
 
+// CreateArticleHandler is a RESTful function for POST /photos/new
 func CreateArticleHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	post := NewPost(r.FormValue("title"), r.FormValue("body"))
@@ -70,9 +81,12 @@ func ShowArticleHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	post, err := LoadPost(params["title"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+		//http.Redirect(w, r, "/404", http.StatusMovedPermanently)
+		http.NotFound(w, r)
+		return
 	}
-	fmt.Fprintf(w, "<!doctype html><html><head><title>%s</title></head><body><h1>%s</h1><p>%s</p></body></html>", post.Title, post.Title, post.Body)
+	renderTemplate(w, "article", post)
 }
 
 func NewPost(title string, body string) *Post {
@@ -106,6 +120,20 @@ func slugify(title string) (slug string) {
 	slug = regexp.MustCompile("-+").ReplaceAllString(slug, "-")
 	slug = strings.Trim(slug, " -")
 	return
+}
+
+func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
+	t := template.Must(template.ParseFiles("templates/"+tmpl+".html", "templates/layout.html"))
+	/*
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	*/
+	err := t.ExecuteTemplate(w, "layout", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 type byLatestDate []os.FileInfo

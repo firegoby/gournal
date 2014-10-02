@@ -1,0 +1,19 @@
+{{ define "page_title" }}Welcome{{ end }}
+
+{{ define "body" }}
+    <h1>Barebones Blog</h1>
+    <h3>A tiny, virtually feature-free, proof-of-concept blog written in Go</h3>
+    <a href="/articles/new"><button>Create an Article</button></a>
+    <h2>Posts</h2>
+    {{  if . }}
+        <ul>
+            {{ range $post := . }}
+                <li><a href='articles/{{ $post.Slug }}'>{{ $post.Title }}</a></li>
+            {{ end }}
+        </ul>
+    {{ else }}
+        <p>No posts yet! <a href="articles/new">Create one&hellip;</a></p>
+    {{ end }}
+    <h2>About</h2>
+    <p class="secondary">This is just an uber-simple, <b class="done">template-less</b>, <b class="done">style-less</b>, authentication-less, validation-less, near feature-less blog system built as a learning project for the <a href="http://golang.org/">Go</a> programming language. The content will be of <em>zero</em> interest to anyone, the <em>codebase</em> <strong>may</strong> be of interest to beginner Go programmers, and that&rsquo;s about it&hellip; seriously, nothing to see here&hellip; move along now.</p>
+{{ end }}

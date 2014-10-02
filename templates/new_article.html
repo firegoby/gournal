@@ -1,0 +1,13 @@
+{{ define "page_title" }}New Article{{ end }}
+
+{{ define "body" }}
+    <h1>New Article</h1>
+    <form action='/articles' method='post'>
+        <input type='text' name='title' placeholder='enter your title&hellip;'/>
+        <br/>
+        <textarea name='body' placeholder='your thoughts...'></textarea>
+        <br/>
+        <button type="submit">Save Article</button>
+    </form>
+    <a href="/"><button class="secondary">&larr; Back to Home</button></a>
+{{ end }}
