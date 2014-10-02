@@ -1,4 +1,27 @@
-// Simplebog implements the most minimal blog imaginable.
+// Copyright (c) 2014 Chris Batchelor.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+// gournal implements the most minimal go blog (go-journal) imaginable.
+//
+// It's just a project for learning about building web apps in Go and isn't
+// meant for any real-world usage.
 package main
 
 import (
@@ -23,12 +46,13 @@ type Post struct {
 	Slug  string
 }
 
-// String returns a simple single line representation of a Post, implementing the Stringer interface
+// String returns a simple single line representation of a Post, implementing
+// the Stringer interface
 func (p *Post) String() string {
 	return fmt.Sprintf("%s (%s)", p.Title, p.Slug)
 }
 
-// Main creates a gorilla/mux router and dispatches incoming requests on port :3000.
+// Main creates a gorilla/mux router & dispatches requests on port :3000
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -42,7 +66,8 @@ func main() {
 	http.ListenAndServe(":3000", router)
 }
 
-// HomeHandler provides a welcome/index page with a listing of recents posts, and a link to create a new post.
+// HomeHandler provides a welcome/index page with a listing of recents posts,
+// and a link to create a new post.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	posts, err := ioutil.ReadDir("posts")
 	if err != nil {
@@ -77,6 +102,7 @@ func CreateArticleHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/articles/"+post.Slug, http.StatusFound)
 }
 
+// ShowArticle tries to load a Post identified by query param 'title'
 func ShowArticleHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	post, err := LoadPost(params["title"])
@@ -89,10 +115,12 @@ func ShowArticleHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "article", post)
 }
 
+// NewPost creates a new Post stuct with title and body
 func NewPost(title string, body string) *Post {
 	return &Post{Title: title, Body: body, Slug: slugify(title)}
 }
 
+// LoadPost attempts to load a Post from posts/ dir identified by slug
 func LoadPost(slug string) (post *Post, err error) {
 	b, err := ioutil.ReadFile("posts/" + slug + ".json")
 	if err != nil {
@@ -105,6 +133,7 @@ func LoadPost(slug string) (post *Post, err error) {
 	return post, nil
 }
 
+// save method for Posts
 func (post *Post) save() error {
 	b, err := json.Marshal(post)
 	if err != nil {
@@ -113,6 +142,7 @@ func (post *Post) save() error {
 	return ioutil.WriteFile("posts/"+post.Slug+".json", b, 0600)
 }
 
+// slugify converts a title string into a url-friendly slug string
 func slugify(title string) (slug string) {
 	slug = strings.ToLower(title)
 	slug = regexp.MustCompile("[^a-z0-9 -]").ReplaceAllString(slug, "")
@@ -122,6 +152,8 @@ func slugify(title string) (slug string) {
 	return
 }
 
+// renderTemplate is a utility function to simplify rendering a nested template
+// tmpl with data
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	t := template.Must(template.ParseFiles("templates/"+tmpl+".html", "templates/layout.html"))
 	/*
@@ -136,6 +168,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	}
 }
 
+// byLatestDate implements the sort.Interface
 type byLatestDate []os.FileInfo
 
 func (f byLatestDate) Len() int           { return len(f) }
