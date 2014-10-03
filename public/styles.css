@@ -16,6 +16,12 @@ h1 {
     font-weight: 200;
 }
 
+h1 small {
+	font-size: 0.6em;
+	font-style: italic;
+	color: #777;
+}
+
 h2 {
     font-weight: 300;
 }

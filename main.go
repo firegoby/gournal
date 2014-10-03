@@ -25,132 +25,92 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/gorilla/mux"
+
+	"./article"
 )
-
-// A Post contains a title, body and slug (used as a permalink).
-type Post struct {
-	Title string
-	Body  string
-	Slug  string
-}
-
-// String returns a simple single line representation of a Post, implementing
-// the Stringer interface
-func (p *Post) String() string {
-	return fmt.Sprintf("%s (%s)", p.Title, p.Slug)
-}
 
 // Main creates a gorilla/mux router & dispatches requests on port :3000
 func main() {
-	router := mux.NewRouter().StrictSlash(true)
+	r := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/", HomeHandler).Methods("GET")
-	router.HandleFunc("/articles/new", NewArticleHandler).Methods("GET")
-	router.HandleFunc("/articles", CreateArticleHandler).Methods("POST")
-	router.HandleFunc("/articles/{title}", ShowArticleHandler).Methods("GET")
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
+	r.HandleFunc("/", HomeHandler).Methods("GET")
+	r.HandleFunc("/articles/new", NewArticleHandler).Methods("GET")
+	r.HandleFunc("/articles", CreateArticleHandler).Methods("POST")
+	r.HandleFunc("/articles/{title}", ShowArticleHandler).Methods("GET")
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 
 	log.Println("Listening on port 3000...")
-	http.ListenAndServe(":3000", router)
+	http.ListenAndServe(":3000", r)
 }
 
 // HomeHandler provides a welcome/index page with a listing of recents posts,
 // and a link to create a new post.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	posts, err := ioutil.ReadDir("posts")
+	articles, err := article.All()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	sort.Sort(byLatestDate(posts))
-	var postsData = make([]*Post, 0)
-	for _, file := range posts {
-		post, err := LoadPost(file.Name()[:len(file.Name())-5])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		postsData = append(postsData, post)
-	}
-	renderTemplate(w, "home", postsData)
+	renderTemplate(w, "home", articles)
 }
 
-// NewArticleHandler is a RESTful function for GET /photos/new
+// Article REST Functions - implements RESTfulResource interface ==============
+
+// IndexArticleHandler is a RESTful function for GET /articles
+func IndexArticleHandler(w http.ResponseWriter, r *http.Request) {
+	// no need for a dedicated Articles index, gournal Home serves that purpose
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// NewArticleHandler is a RESTful function for GET /articles/new
 func NewArticleHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "new_article", nil)
 }
 
-// CreateArticleHandler is a RESTful function for POST /photos/new
+// CreateArticleHandler is a RESTful function for POST /articles/new
 func CreateArticleHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	post := NewPost(r.FormValue("title"), r.FormValue("body"))
-	err := post.save()
+	a := article.New(r.FormValue("title"), r.FormValue("body"))
+	err := a.Save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/articles/"+post.Slug, http.StatusFound)
+	http.Redirect(w, r, "/articles/"+a.Slug, http.StatusFound)
 }
 
-// ShowArticle tries to load a Post identified by query param 'title'
+// ShowArticleHandler is a RESTful function for GET /articles/:id
 func ShowArticleHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	post, err := LoadPost(params["title"])
+	a, err := article.Load(params["title"])
 	if err != nil {
 		log.Println(err.Error())
-		//http.Redirect(w, r, "/404", http.StatusMovedPermanently)
 		http.NotFound(w, r)
 		return
 	}
-	renderTemplate(w, "article", post)
+	renderTemplate(w, "show_article", a)
 }
 
-// NewPost creates a new Post stuct with title and body
-func NewPost(title string, body string) *Post {
-	return &Post{Title: title, Body: body, Slug: slugify(title)}
+// EditArticleHandler is a RESTful function for GET /articles/:id/edit
+func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO
 }
 
-// LoadPost attempts to load a Post from posts/ dir identified by slug
-func LoadPost(slug string) (post *Post, err error) {
-	b, err := ioutil.ReadFile("posts/" + slug + ".json")
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(b, &post)
-	if err != nil {
-		return nil, err
-	}
-	return post, nil
+// UpdateArticleHandler is a RESTful function for PUT /articles/:id
+func UpdateArticleHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO
 }
 
-// save method for Posts
-func (post *Post) save() error {
-	b, err := json.Marshal(post)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile("posts/"+post.Slug+".json", b, 0600)
+// DestroyArticleHandler is a RESTful function for DELETE /articles/:id
+func DestroyArticleHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO
 }
 
-// slugify converts a title string into a url-friendly slug string
-func slugify(title string) (slug string) {
-	slug = strings.ToLower(title)
-	slug = regexp.MustCompile("[^a-z0-9 -]").ReplaceAllString(slug, "")
-	slug = regexp.MustCompile(" +").ReplaceAllString(slug, "-")
-	slug = regexp.MustCompile("-+").ReplaceAllString(slug, "-")
-	slug = strings.Trim(slug, " -")
-	return
-}
+// Utilities ==================================================================
 
 // renderTemplate is a utility function to simplify rendering a nested template
 // tmpl with data
@@ -167,10 +127,3 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-// byLatestDate implements the sort.Interface
-type byLatestDate []os.FileInfo
-
-func (f byLatestDate) Len() int           { return len(f) }
-func (f byLatestDate) Less(i, j int) bool { return f[i].ModTime().After(f[j].ModTime()) }
-func (f byLatestDate) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
