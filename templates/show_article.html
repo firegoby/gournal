@@ -4,5 +4,6 @@
     <a href="/articles/{{ .Slug }}"><h1>{{ .Title }}</h1></a>
     <p>{{ .Body }}</p>
     <hr />
+	<a href="/articles/{{ .Slug }}/edit"><button class="alternative">Edit Article</button></a>
     <a href="/"><button class="secondary">&larr; Back to Home</button></a>
 {{ end }}

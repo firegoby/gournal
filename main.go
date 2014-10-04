@@ -29,22 +29,23 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/gorilla/mux"
-
-	"./article"
+	"github.com/firegoby/gournal/article"
+	"github.com/firegoby/mux"
 )
 
 // Main creates a gorilla/mux router & dispatches requests on port :3000
 func main() {
-	r := mux.NewRouter().StrictSlash(true)
+	r := mux.NewRouter().StrictSlash(true).HTTPMethodOverride(true)
 
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 	r.HandleFunc("/articles/new", NewArticleHandler).Methods("GET")
 	r.HandleFunc("/articles", CreateArticleHandler).Methods("POST")
 	r.HandleFunc("/articles/{title}", ShowArticleHandler).Methods("GET")
+	r.HandleFunc("/articles/{title}/edit", EditArticleHandler).Methods("GET")
+	r.HandleFunc("/articles/{title}", UpdateArticleHandler).Methods("PUT")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 
-	log.Println("Listening on port 3000...")
+	log.Println("Listening on 3000...")
 	http.ListenAndServe(":3000", r)
 }
 
@@ -86,23 +87,51 @@ func CreateArticleHandler(w http.ResponseWriter, r *http.Request) {
 // ShowArticleHandler is a RESTful function for GET /articles/:id
 func ShowArticleHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+
 	a, err := article.Load(params["title"])
 	if err != nil {
 		log.Println(err.Error())
 		http.NotFound(w, r)
 		return
 	}
+
 	renderTemplate(w, "show_article", a)
 }
 
 // EditArticleHandler is a RESTful function for GET /articles/:id/edit
 func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	params := mux.Vars(r)
+
+	a, err := article.Load(params["title"])
+	if err != nil {
+		log.Println(err.Error())
+		http.NotFound(w, r)
+		return
+	}
+
+	renderTemplate(w, "edit_article", a)
 }
 
 // UpdateArticleHandler is a RESTful function for PUT /articles/:id
 func UpdateArticleHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	params := mux.Vars(r)
+
+	a, err := article.Load(params["title"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	a.Title = r.FormValue("title")
+	a.Body = r.FormValue("body")
+
+	err = a.Save()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/articles/"+a.Slug, http.StatusFound)
 }
 
 // DestroyArticleHandler is a RESTful function for DELETE /articles/:id

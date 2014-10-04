@@ -1,0 +1,14 @@
+{{ define "page_title" }}Edit Article{{ end }}
+
+{{ define "body" }}
+    <h1>Edit Article</h1>
+	<form action='/articles/{{ .Slug }}' method='post'>
+		<input type='hidden' name='_method' value='PUT' />
+		<input type='text' name='title' placeholder='enter your title&hellip;' value="{{ .Title }}"/>
+        <br/>
+		<textarea name='body' placeholder='your thoughts...'>{{ .Body }}</textarea>
+        <br/>
+        <button type="submit">Save Article</button>
+    </form>
+    <a href="/"><button class="secondary">&larr; Back to Home</button></a>
+{{ end }}

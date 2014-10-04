@@ -84,6 +84,12 @@ button.secondary {
     color: #555;
 }
 
+button.alternative {
+	background: #db3440;
+	color: white;
+	float: right;
+}
+
 hr {
     background: #ddd;
     border: 0;
